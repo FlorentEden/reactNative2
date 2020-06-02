@@ -7,7 +7,6 @@ import {FontAwesome5} from '@expo/vector-icons';
 import Polyline from '@mapbox/polyline';
 
 
-
 class About extends React.Component {
   constructor(props){
     super(props);
@@ -60,7 +59,8 @@ class About extends React.Component {
     try{
       const resp = await fetch('https://maps.googleapis.com/maps/api/directions/json?origin='+locDepart+'&destination='+locFin+'&key=AIzaSyBOQAM6GRyLRXeOZVlmuLl5eY-isehFccY')
       const respJson = await resp.json();
-      alert(JSON.stringify(respJson.routes[0].legs[0].distance.text));
+      //alert(JSON.stringify(respJson.routes[0].legs[0]));
+      alert(JSON.stringify(respJson.routes[0].legs[0].distance.text)+" "+JSON.stringify(respJson.routes[0].legs[0].duration.text));
       const points = Polyline.decode(respJson.routes[0].overview_polyline.points);
       const coords = points.map(point => {
         return{
@@ -97,7 +97,7 @@ class About extends React.Component {
                 return <MapView.Marker onPress={() => this.direction(this.state.lat, this.state.record[i].fields.geo_point_2d[0], this.state.long, this.state.record[i].fields.geo_point_2d[1])} key={i} coordinate={{latitude: this.state.record[i].fields.geo_point_2d[0], longitude: this.state.record[i].fields.geo_point_2d[1]}} title={this.state.record[i].fields.name} description={"Vélo dispo : "+this.state.record[i].fields.available} pinColor={"#00FF00"}/>
               }
             })}
-              <MapView.Polyline coordinates={this.state.coords} strokeWidth={2} strokeColor="red"/>
+              <MapView.Polyline coordinates={this.state.coords} strokeWidth={5} strokeColor="red"/>
             </MapView>
         </View>
       );

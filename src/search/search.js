@@ -8,10 +8,14 @@ import {
   TextInput,
   Button,
   Image,
+  Vibration,
 } from 'react-native'
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {FontAwesome5} from '@expo/vector-icons';
+import { Video } from 'expo-av';
+
+
 
 
 class Search extends Component{
@@ -30,6 +34,7 @@ class Search extends Component{
       main: null,
       icon: null,
       icons: [],
+      duration: 400,
     }
   }
 
@@ -64,6 +69,7 @@ class Search extends Component{
       },
       (error) => {}
       );
+      Vibration.vibrate(this.state.duration);
   }
 
   setCity(ville){
@@ -91,6 +97,17 @@ class Search extends Component{
           <Text><FontAwesome5 name='snowflake' size={16} color="grey"/> temperature min: {this.state.tempMin}°C</Text>
           <Text><FontAwesome5 name='thermometer-full' size={16} color="grey"/> temperature max: {this.state.tempMMax}°C</Text>
         </View>
+        <Video
+          useNativeControls
+          source={{ uri: 'http://d23dyxeqlo5psv.cloudfront.net/big_buck_bunny.mp4' }}
+          rate={1.0}
+          volume={1.0}
+          isMuted={false}
+          resizeMode="cover"
+          shouldPlay
+          isLooping
+          style={{ width: 300, height: 300 }}
+        />
       </View>
 
     )
