@@ -1,0 +1,122 @@
+import React, { useState, useEffect } from 'react';
+import MapView, { PolyUtil } from 'react-native-maps';
+import { StyleSheet, Text, View, Dimensions, ActivityIndicator, StatusBar, Alert } from 'react-native';
+import * as Location from 'expo-location';
+import * as Permissions from 'expo-permissions';
+import {FontAwesome5} from '@expo/vector-icons';
+import Polyline from '@mapbox/polyline';
+
+
+
+class About extends React.Component {
+  constructor(props){
+    super(props);
+    this.state = {
+      load: false,
+      geocode:null,
+      errorMessage:"",
+      lat: null,
+      long: null,
+      record: [],
+      coords: [{"latitude":45.76964,"longitude":4.90117},{"latitude":45.76906,"longitude":4.89937},{"latitude":45.76869,"longitude":4.8996},{"latitude":45.76765,"longitude":4.90035},{"latitude":45.76734,"longitude":4.90052},{"latitude":45.76715,"longitude":4.90054}],
+      //loadcoords: false,
+    }
+    this.getLocationAsync();
+    this.velovSearch()
+  }
+
+  getLocationAsync = async () => {
+    let { status } = await Permissions.askAsync(Permissions.LOCATION);
+    if (status !== 'granted') {
+      this.setState({
+        errorMessage: 'Permission to access location was denied',
+      });
+    }
+
+    let location = await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.Highest});
+    const { latitude , longitude } = location.coords
+    this.setState({ lat: latitude, long: longitude});
+  };
+
+  velovSearch(){
+    fetch("https://public.opendatasoft.com/api/records/1.0/search/?dataset=station-velov-grand-lyon&q=&rows=1000&facet=name&facet=commune&facet=bonus&facet=status&facet=available&facet=availabl_1&facet=availabili&facet=availabi_1&facet=last_upd_1")
+    .then(res => res.json())
+    .then(
+      (result) => {
+        this.setState({record:result.records,load: true});
+      },
+      (error) => {}
+      );
+  }
+
+  direction(lat1, lat2, long1, long2){
+    const cordStart = JSON.stringify(lat1)+', '+JSON.stringify(long1)
+    const cordEnd = JSON.stringify(lat2)+', '+JSON.stringify(long2)
+    //alert(cordStart+'   '+cordEnd)
+    this.RouteToPoint(cordStart, cordEnd)
+  }
+
+  async RouteToPoint(locDepart, locFin) {
+    try{
+      const resp = await fetch('https://maps.googleapis.com/maps/api/directions/json?origin='+locDepart+'&destination='+locFin+'&key=AIzaSyBOQAM6GRyLRXeOZVlmuLl5eY-isehFccY')
+      const respJson = await resp.json();
+      alert(JSON.stringify(respJson.routes[0].legs[0].distance.text));
+      const points = Polyline.decode(respJson.routes[0].overview_polyline.points);
+      const coords = points.map(point => {
+        return{
+          latitude: point[0],
+          longitude: point[1]
+        }
+      })
+      this.setState({ coords: coords})
+    }
+    catch(error) {
+      alert(error);
+    }
+  }
+
+  render(){
+    let {load} = this.state;
+    if (load == false) {
+      return (
+        <View style={styles.container}>
+          <Text>Loading...</Text>
+          <ActivityIndicator size="large" color="red" />
+        </View>
+      );
+    }
+    else {
+      return (
+        <View style={styles.container}>
+          <StatusBar hidden={true}/>
+          <MapView showsUserLocation style={styles.mapStyle} initialRegion={{latitude: this.state.lat, longitude: this.state.long, latitudeDelta: 0.006, longitudeDelta: 0.007,}}>
+            {this.state.record.map((item, i) => {
+              if (this.state.record[i].fields.available == 0) {
+                return <MapView.Marker onPress={() => this.direction(this.state.lat, this.state.record[i].fields.geo_point_2d[0], this.state.long, this.state.record[i].fields.geo_point_2d[1])} key={i} coordinate={{latitude: this.state.record[i].fields.geo_point_2d[0], longitude: this.state.record[i].fields.geo_point_2d[1]}} title={this.state.record[i].fields.name} description={"Vélo dispo : "+this.state.record[i].fields.available}/>
+              }else {
+                return <MapView.Marker onPress={() => this.direction(this.state.lat, this.state.record[i].fields.geo_point_2d[0], this.state.long, this.state.record[i].fields.geo_point_2d[1])} key={i} coordinate={{latitude: this.state.record[i].fields.geo_point_2d[0], longitude: this.state.record[i].fields.geo_point_2d[1]}} title={this.state.record[i].fields.name} description={"Vélo dispo : "+this.state.record[i].fields.available} pinColor={"#00FF00"}/>
+              }
+            })}
+              <MapView.Polyline coordinates={this.state.coords} strokeWidth={2} strokeColor="red"/>
+            </MapView>
+        </View>
+      );
+    }
+  }
+}
+
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapStyle: {
+    width: Dimensions.get('window').width,
+    height: Dimensions.get('window').height,
+  },
+});
+
+export default About;
