@@ -24,10 +24,10 @@ class App extends Component {
             screenOptions={({ route }) => ({
             tabBarIcon: ({ focused, color, size }) => {
               let iconName;
-              if (route.name === 'Home') {
-                return <FontAwesome5 name='home' size={size} color={color}/>;
-              } else if (route.name === 'Details') {
-                return <FontAwesome5 name='info-circle' size={size} color={color}/>;
+              if (route.name === 'setting') {
+                return <FontAwesome5 name='cog' size={size} color={color}/>;
+              } else if (route.name === 'Map') {
+                return <FontAwesome5 name='map-marked-alt' size={size} color={color}/>;
               }
             },
           })}
@@ -35,8 +35,7 @@ class App extends Component {
             activeTintColor: 'tomato',
             inactiveTintColor: 'gray',
         }}>
-            <Tab.Screen name="Home" component={Search} />
-            <Tab.Screen name="Details" component={About} />
+            <Tab.Screen name="Map" component={About} />
           </Tab.Navigator>
         </NavigationContainer>
 
