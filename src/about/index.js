@@ -106,6 +106,9 @@ class About extends React.Component {
       alert(error);
     }
     const interval = setInterval( async () => {
+      if (i == this.state.respJSON.steps.length) {
+        clearInterval(interval);
+      }
       let cordStart = JSON.stringify(this.state.lat)+', '+JSON.stringify(this.state.long);
       let cordEnd = JSON.stringify(this.state.respJSON.steps[i].end_location.lat)+', '+JSON.stringify(this.state.respJSON.steps[i].end_location.lng);
         try{
@@ -115,7 +118,7 @@ class About extends React.Component {
             let xmlString = this.state.respJSON.steps[i].html_instructions;
             let respDoc = new DOMParser().parseFromString(xmlString, "text/html");
             this.setState({instruction:this.state.respJSON.steps[i].html_instructions, doc:respDoc})
-            console.log(this.state.doc);
+            //console.log(this.state.doc);
             i++;
           }
         }
