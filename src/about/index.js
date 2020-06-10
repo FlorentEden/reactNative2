@@ -9,12 +9,15 @@ import {
   StatusBar,
   Alert,
   Button,
-  TouchableOpacity
+  TouchableOpacity,
+  Modal
 } from 'react-native';
+import {DOMParser} from 'xmldom';
 import * as Location from 'expo-location';
 import * as Permissions from 'expo-permissions';
 import {  FontAwesome5  } from '@expo/vector-icons';
 import Polyline from '@mapbox/polyline';
+
 
 
 class About extends React.Component {
@@ -33,6 +36,11 @@ class About extends React.Component {
       distance: " :(",
       duree: " :(",
       loadDest: false,
+      isLoggedIn: false,
+      respJSON: null,
+      DestDef: false,
+      instruction: "avance",
+      doc: null,
     }
     this.getLocationAsync();
     this.velovSearch()
@@ -58,7 +66,10 @@ class About extends React.Component {
       (result) => {
         this.setState({record:result.records,load: true});
       },
-      (error) => {}
+      (error) => {
+        alert(error);
+        this.setState({load: false});
+      }
       );
   }
 
@@ -75,10 +86,10 @@ class About extends React.Component {
   }
 
   async RouteToPoint(locDepart, locFin) {
+    let i = 0;
     try{
       const resp = await fetch('https://maps.googleapis.com/maps/api/directions/json?origin='+locDepart+'&destination='+locFin+'&key=AIzaSyBOQAM6GRyLRXeOZVlmuLl5eY-isehFccY')
       const respJson = await resp.json();
-      //alert(JSON.stringify(respJson.routes[0].legs[0].distance.text)+" "+JSON.stringify(respJson.routes[0].legs[0].duration.text));
       const points = Polyline.decode(respJson.routes[0].overview_polyline.points);
       const coords = points.map(point => {
         return{
@@ -86,34 +97,45 @@ class About extends React.Component {
           longitude: point[1]
         }
       })
-      this.setState({ distance:respJson.routes[0].legs[0].distance.text, duree:respJson.routes[0].legs[0].duration.text })
+      this.setState({ distance:respJson.routes[0].legs[0].distance.text, duree:respJson.routes[0].legs[0].duration.text , isLoggedIn: true, respJSON:respJson.routes[0].legs[0]})
       if (this.state.loadDest === true) {
-        this.setState({ coords: coords, loadDest: false})
+        this.setState({ coords: coords, loadDest: false, DestDef: true})
       }
     }
     catch(error) {
       alert(error);
     }
-  }
-
-  destination(){
-    if (this.state.cordStart == null) {
-      alert('Pas de station choisi')
-    }else {
-    }
+    const interval = setInterval( async () => {
+      let cordStart = JSON.stringify(this.state.lat)+', '+JSON.stringify(this.state.long);
+      let cordEnd = JSON.stringify(this.state.respJSON.steps[i].end_location.lat)+', '+JSON.stringify(this.state.respJSON.steps[i].end_location.lng);
+        try{
+          const resp = await fetch('https://maps.googleapis.com/maps/api/directions/json?origin='+cordStart+'&destination='+cordEnd+'&key=AIzaSyBOQAM6GRyLRXeOZVlmuLl5eY-isehFccY')
+          const respJsoN = await resp.json();
+          if (respJsoN.routes[0].legs[0].distance.value < 100 && this.state.DestDef === true) {
+            let xmlString = this.state.respJSON.steps[i].html_instructions;
+            let respDoc = new DOMParser().parseFromString(xmlString, "text/html");
+            this.setState({instruction:this.state.respJSON.steps[i].html_instructions, doc:respDoc})
+            console.log(this.state.doc);
+            i++;
+          }
+        }
+        catch(error) {
+          alert(error);
+        }
+    }, 3000);
   }
 
   render(){
-    let {load} = this.state;
-    if (load == false) {
-      return (
+    let {load, isLoggedIn} = this.state;
+    if (!load) {
+      var page = (
         <View style={styles.container}>
           <ActivityIndicator size="large" color="white" />
         </View>
       );
     }
     else {
-      return (
+      var page = (
         <View>
           <StatusBar hidden={true}/>
           <MapView showsUserLocation style={styles.mapStyle} initialRegion={{latitude: this.state.lat, longitude: this.state.long, latitudeDelta: 0.006, longitudeDelta: 0.007,}}>
@@ -124,8 +146,15 @@ class About extends React.Component {
                 return <MapView.Marker onPress={() => this.direction(this.state.lat, this.state.record[i].fields.geo_point_2d[0], this.state.long, this.state.record[i].fields.geo_point_2d[1])} key={i} coordinate={{latitude: this.state.record[i].fields.geo_point_2d[0], longitude: this.state.record[i].fields.geo_point_2d[1]}} title={this.state.record[i].fields.name} description={"Vélo dispo : "+this.state.record[i].fields.available} pinColor={"#00FF00"}/>
               }
             })}
-              <MapView.Polyline coordinates={this.state.coords} strokeWidth={5} strokeColor="red"/>
+            {isLoggedIn ? (
+                  <MapView.Polyline coordinates={this.state.coords} strokeWidth={5} strokeColor="red"/>
+                ) : (
+                  <MapView.Polyline coordinates={this.state.coords} strokeWidth={0} strokeColor="red"/>
+                )}
             </MapView>
+            <View visible={false} style={styles.destyle}>
+                <Text>{this.state.instruction}</Text>
+            </View>
             <View style={styles.destyle}>
               <Text style={styles.destyleElement}>Distance: {this.state.distance}</Text>
               <Text style={styles.destyleElement}>duree: {this.state.duree}</Text>
@@ -134,6 +163,7 @@ class About extends React.Component {
         </View>
       );
     }
+    return page
   }
 }
 
@@ -147,7 +177,7 @@ const styles = StyleSheet.create({
     color: "white"
   },
   mapStyle: {
-    height: '93%',
+    height: '86%',
     borderWidth: 1,
     borderColor: '#000000',
   },
@@ -161,7 +191,7 @@ const styles = StyleSheet.create({
   destyleElement: {
     color: 'white',
     width: "25%",
-    textAlign: 'center'
+    textAlign: 'center',
   },
   destyleElementButt: {
     backgroundColor: 'white',
@@ -177,7 +207,7 @@ const styles = StyleSheet.create({
     color: 'tomato',
     fontSize: 15,
     marginRight: '5%'
-  }
+  },
 });
 
 export default About;
