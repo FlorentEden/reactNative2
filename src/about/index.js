@@ -88,7 +88,7 @@ class About extends React.Component {
   async RouteToPoint(locDepart, locFin) {
     let i = 0;
     try{
-      const resp = await fetch('https://maps.googleapis.com/maps/api/directions/json?origin='+locDepart+'&destination='+locFin+'&key=AIzaSyBOQAM6GRyLRXeOZVlmuLl5eY-isehFccY')
+      const resp = await fetch('https://maps.googleapis.com/maps/api/directions/json?origin='+locDepart+'&destination='+locFin+'&key=AIzaSyBOQAM6GRyLRXeOZVlmuLl5eY-isehFccY&mode=walking')
       const respJson = await resp.json();
       const points = Polyline.decode(respJson.routes[0].overview_polyline.points);
       const coords = points.map(point => {
@@ -112,7 +112,7 @@ class About extends React.Component {
       let cordStart = JSON.stringify(this.state.lat)+', '+JSON.stringify(this.state.long);
       let cordEnd = JSON.stringify(this.state.respJSON.steps[i].end_location.lat)+', '+JSON.stringify(this.state.respJSON.steps[i].end_location.lng);
         try{
-          const resp = await fetch('https://maps.googleapis.com/maps/api/directions/json?origin='+cordStart+'&destination='+cordEnd+'&key=AIzaSyBOQAM6GRyLRXeOZVlmuLl5eY-isehFccY')
+          const resp = await fetch('https://maps.googleapis.com/maps/api/directions/json?origin='+cordStart+'&destination='+cordEnd+'&key=AIzaSyBOQAM6GRyLRXeOZVlmuLl5eY-isehFccY&mode=walking')
           const respJsoN = await resp.json();
           if (respJsoN.routes[0].legs[0].distance.value < 100 && this.state.DestDef === true) {
             let xmlString = this.state.respJSON.steps[i].html_instructions;
